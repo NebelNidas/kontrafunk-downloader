@@ -22,13 +22,13 @@ public class SpreakerEpisodeExtractor {
 	 * Parses the item tags from an XML feed.
 	 *
 	 * @param inputStream The input stream of the XML feed.
-	 * @return A list of {@link SpreakerItem} objects.
+	 * @return A list of {@link SpreakerEpisodeData} objects.
 	 * @throws UnsupportedEncodingException
 	 */
-	public List<SpreakerItem> getItems(InputStream inputStream) throws XMLStreamException, UnsupportedEncodingException {
+	public List<SpreakerEpisodeData> getItems(InputStream inputStream) throws XMLStreamException, UnsupportedEncodingException {
 		XMLInputFactory factory = XMLInputFactory.newInstance();
 		XMLStreamReader reader = factory.createXMLStreamReader(new InputStreamReader(inputStream, "UTF-8"));
-		List<SpreakerItem> items = new ArrayList<>();
+		List<SpreakerEpisodeData> items = new ArrayList<>();
 
 		while (reader.hasNext()) {
 			int event = reader.next();
@@ -73,7 +73,7 @@ public class SpreakerEpisodeExtractor {
 						title = normalizeTitle(title, publicationDate);
 						LocalDate targetDate = LocalDate.parse(title.substring(title.indexOf("vom") + 4), titleDateFormatter);
 
-						items.add(new SpreakerItem(
+						items.add(new SpreakerEpisodeData(
 								title,
 								description,
 								episodeApiLink,
@@ -183,7 +183,7 @@ public class SpreakerEpisodeExtractor {
 		return text;
 	}
 
-	public record SpreakerItem(
+	public record SpreakerEpisodeData(
 			String title,
 			String description,
 			String episodeApiLink,

@@ -15,13 +15,13 @@ import org.htmlunit.html.HtmlAnchor;
 import org.htmlunit.html.HtmlElement;
 import org.htmlunit.html.HtmlPage;
 
-import com.github.nebelnidas.kfdl.core.SpreakerEpisodeExtractor.SpreakerItem;
+import com.github.nebelnidas.kfdl.core.SpreakerEpisodeExtractor.SpreakerEpisodeData;
 
 public class KontrafunkScraper {
 	// Freitag, 26. April 2024, 5:05 Uhr
 	private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEEE, d. MMMM yyyy, H:mm 'Uhr'", Locale.GERMAN);
 
-	public static EpisodeInfo getEpisodeInfo(String episodeUrl, SpreakerItem spreakerInfo) throws FailingHttpStatusCodeException, MalformedURLException, IOException {
+	public static WebsiteEpisodeData getEpisodeInfo(String episodeUrl, SpreakerEpisodeData spreakerData) throws FailingHttpStatusCodeException, MalformedURLException, IOException {
 		try (WebClient webClient = new WebClient()) {
 			webClient.getOptions().setCssEnabled(false);
 			webClient.getOptions().setJavaScriptEnabled(false);
@@ -32,8 +32,8 @@ public class KontrafunkScraper {
 			LocalDate parsedDate = LocalDate.parse(date, dateFormatter);
 
 			List<HtmlElement> elements = page.getByXPath("//*[@id=\"template-wI5pQLap#2\"]/div/div/div[4]/div/span");
-			String host = null;
-			String kfCommentAuthor = null;
+			Person host = null;
+			Person kfCommentAuthor = null;
 
 			if (elements.size() != 3) {
 				if (elements.size() == 2) {
@@ -41,8 +41,8 @@ public class KontrafunkScraper {
 						// Host info is missing
 						elements.add(0, null);
 
-						host = switch (spreakerInfo.publicationDate().toString()) {
-							case "2024-04-16" -> "Marcel Joppa";
+						host = switch (spreakerData.publicationDate().toString()) {
+							case "2024-04-16" -> Person.MARCEL_JOPPA;
 							default -> null;
 						};
 					} else if (page.getByXPath("//*[@id=\"template-wI5pQLap#2\"]/div/div/div[4]/div/text()[2]").isEmpty()) {
@@ -57,28 +57,28 @@ public class KontrafunkScraper {
 			}
 
 			if (host == null) {
-				host = elements.get(0).getFirstChild().getNextSibling().asNormalizedText();
+				host = Person.getOrCreate(elements.get(0).getFirstChild().getNextSibling().asNormalizedText());
 			}
 
-			List<String> guests = new ArrayList<>();
+			List<Person> guests = new ArrayList<>();
 
 			for (DomElement element : elements.get(1).getChildElements()) {
 				if (!(element instanceof HtmlAnchor a)) continue;
 
-				guests.add(a.asNormalizedText());
+				guests.add(Person.getOrCreate(a.asNormalizedText()));
 			}
 
 			if (elements.size() == 3) {
-				kfCommentAuthor = elements.get(2).getFirstChild().getNextSibling().asNormalizedText();
+				kfCommentAuthor = Person.getOrCreate(elements.get(2).getFirstChild().getNextSibling().asNormalizedText());
 			}
 
-			return new EpisodeInfo(parsedDate, host, guests, kfCommentAuthor);
+			return new WebsiteEpisodeData(parsedDate, host, guests, kfCommentAuthor);
 		}
 	}
 
-	public record EpisodeInfo(
+	public record WebsiteEpisodeData(
 			LocalDate date,
-			String host,
-			List<String> guests,
-			String kfCommentAuthor) { }
+			Person host,
+			List<Person> guests,
+			Person commentAuthor) { }
 }
