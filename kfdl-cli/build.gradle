@@ -1,0 +1,22 @@
+plugins {
+	id "application"
+}
+
+base {
+	archivesName = "kfdl-cli"
+}
+
+dependencies {
+	api project(":kfdl-core")
+	api "com.beust:jcommander:${jcommander_version}"
+	runtimeOnly "org.tinylog:tinylog-impl:${tinylog_version}"
+	runtimeOnly "org.tinylog:slf4j-tinylog:${tinylog_version}"
+}
+
+application {
+	mainClass = "com.github.nebelnidas.kfdl.cli.Main"
+}
+
+jar {
+	processResources.exclude('tinylog-dev.properties')
+}

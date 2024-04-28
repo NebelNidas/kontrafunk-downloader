@@ -1,0 +1,15 @@
+pluginManagement {
+	repositories {
+		mavenCentral()
+		gradlePluginPortal()
+	}
+	plugins {
+		id 'com.github.johnrengelman.shadow' version "${shadow_version}"
+		id 'com.diffplug.spotless' version "${spotless_version}"
+	}
+}
+
+rootProject.name = 'kontrafunk-downloader'
+
+include 'kfdl-core'
+include 'kfdl-cli'

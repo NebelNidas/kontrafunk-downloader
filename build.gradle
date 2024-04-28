@@ -1,0 +1,74 @@
+plugins {
+	id "com.github.johnrengelman.shadow" apply false
+	id "com.diffplug.spotless" apply false
+}
+
+allprojects {
+	apply plugin: "java-library"
+	apply plugin: "maven-publish"
+	apply plugin: "checkstyle"
+	apply plugin: "com.github.johnrengelman.shadow"
+
+	checkstyle {
+		configFile = rootProject.file("checkstyle.xml")
+		toolVersion = project.checkstyle_tool_version
+	}
+
+	group "com.github.nebelnidas.kfdl"
+	version = rootProject.version
+
+	tasks.withType(JavaCompile).configureEach {
+		it.options.encoding = "UTF-8"
+		it.options.release = 17
+	}
+
+	java {
+		withSourcesJar()
+		withJavadocJar()
+
+		sourceCompatibility = JavaVersion.VERSION_17
+		targetCompatibility = JavaVersion.VERSION_17
+
+		if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
+			toolchain {
+				languageVersion = JavaLanguageVersion.of(17)
+			}
+		}
+	}
+
+	repositories {
+		mavenCentral()
+	}
+
+	dependencies {
+		compileOnly "org.jetbrains:annotations:${project.jetbrains_annotations_version}"
+
+		testImplementation "org.junit.jupiter:junit-jupiter:${junit_jupiter_version}"
+		testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+		testCompileOnly "org.jetbrains:annotations:${project.jetbrains_annotations_version}"
+	}
+
+	test {
+		useJUnitPlatform()
+	}
+
+	javadoc {
+		failOnError = false
+		options.addBooleanOption('html5', true)
+
+		// disable 'missing' warnings
+		options.addStringOption('Xdoclint:all,-missing', '-quiet')
+	}
+
+	assemble.dependsOn javadocJar
+
+	publishing {
+		publications {
+			"$project.name"(MavenPublication) {
+				from components.java
+			}
+		}
+	}
+}
+
+
