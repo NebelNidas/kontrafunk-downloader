@@ -56,29 +56,30 @@ public class Downloader {
 	}
 
 	private void startNextDownload() {
-		MergedEpisodeData next = pendingDownloads.poll();
+		MergedEpisodeData item = pendingDownloads.poll();
 
-		if (next == null) {
+		if (item == null) {
 			finished = true;
 			return;
 		}
 
 		threadPool.submit(() -> {
 			try {
-				Kfdl.LOGGER.info("Starting download of episode '{}'", next.title());
-				activeDownloads.add(next);
-				saveFileHandler.addOrUpdate(next, DownloadState.DOWNLOADING);
-				download(next);
-				successfulDownloads.add(next);
-				saveFileHandler.addOrUpdate(next, DownloadState.SUCCESSFUL);
-				Kfdl.LOGGER.info("Download of episode '{}' finished", next.title());
+				Kfdl.LOGGER.info("Starting download of episode '{}'", item.title());
+				activeDownloads.add(item);
+				saveFileHandler.addOrUpdate(item, DownloadState.DOWNLOADING);
+				download(item);
+				successfulDownloads.add(item);
+				tag(item, workingDir.resolve(item.date().toString() + ".mp3"));
+				saveFileHandler.addOrUpdate(item, DownloadState.SUCCESSFUL);
+				Kfdl.LOGGER.info("Download of episode '{}' finished", item.title());
 			} catch (Exception e) {
-				failedDownloads.add(next);
-				saveFileHandler.addOrUpdate(next, DownloadState.FAILED);
-				Kfdl.LOGGER.error("Download of episode '{}' failed", next.title(), e);
+				failedDownloads.add(item);
+				saveFileHandler.addOrUpdate(item, DownloadState.FAILED);
+				Kfdl.LOGGER.error("Download of episode '{}' failed", item.title(), e);
 			}
 
-			activeDownloads.remove(next);
+			activeDownloads.remove(item);
 			saveFileHandler.suggestSave();
 			startNextDownload();
 		});
@@ -94,7 +95,9 @@ public class Downloader {
 				fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
 			}
 		}
+	}
 
+	private void tag(MergedEpisodeData episodeData, Path path) {
 		try {
 			MP3File mp3File = (MP3File) AudioFileIO.read(path.toFile());
 			ID3v24Tag tagContainer = new ID3v24Tag(); // Jellyfin doesn't read full dates from <2.4
