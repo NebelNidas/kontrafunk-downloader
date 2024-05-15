@@ -4,5 +4,9 @@ base {
 
 dependencies {
 	api "org.slf4j:slf4j-api:${slf4j_version}"
-	api "org.htmlunit:htmlunit:${htmlunit_version}"
+	implementation "org.htmlunit:htmlunit:${htmlunit_version}"
+	implementation "net.jthink:jaudiotagger:${jaudiotagger_version}"
+
+	compileOnly "org.projectlombok:lombok:${lombok_version}"
+	annotationProcessor "org.projectlombok:lombok:${lombok_version}"
 }

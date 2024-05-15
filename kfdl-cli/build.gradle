@@ -9,8 +9,13 @@ base {
 dependencies {
 	api project(":kfdl-core")
 	api "com.beust:jcommander:${jcommander_version}"
-	runtimeOnly "org.tinylog:tinylog-impl:${tinylog_version}"
+
+	compileOnly "org.projectlombok:lombok:${lombok_version}"
+	annotationProcessor "org.projectlombok:lombok:${lombok_version}"
+
+	implementation "org.tinylog:jul-tinylog:${tinylog_version}"
 	runtimeOnly "org.tinylog:slf4j-tinylog:${tinylog_version}"
+	runtimeOnly "org.tinylog:tinylog-impl:${tinylog_version}"
 }
 
 application {

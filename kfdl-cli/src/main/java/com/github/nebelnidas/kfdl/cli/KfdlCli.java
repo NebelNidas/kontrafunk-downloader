@@ -3,9 +3,9 @@ package com.github.nebelnidas.kfdl.cli;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.beust.jcommander.JCommander;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.beust.jcommander.JCommander;
 
 import com.github.nebelnidas.kfdl.cli.provider.CliCommandProvider;
 import com.github.nebelnidas.kfdl.cli.provider.CliParameterProvider;

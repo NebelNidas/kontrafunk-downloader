@@ -1,9 +1,13 @@
 package com.github.nebelnidas.kfdl.cli;
 
+import org.tinylog.jul.JulTinylogBridge;
+
 import com.github.nebelnidas.kfdl.cli.provider.builtin.RunCliCommandProvider;
 
 public class Main {
 	public static void main(String[] args) {
+		JulTinylogBridge.activate();
+
 		// Instantiate the CLI handler. We don't accept unknown parameters,
 		// since this is the base implementation where only known
 		// providers are registered.
