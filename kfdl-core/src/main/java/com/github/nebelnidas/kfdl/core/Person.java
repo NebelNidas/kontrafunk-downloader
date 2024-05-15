@@ -1,10 +1,19 @@
 package com.github.nebelnidas.kfdl.core;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public record Person(String name) {
-	static final Map<String, Person> personsByName = new HashMap<>();
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Value;
+
+@Value
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+public class Person {
+	private static final Map<String, Person> personsByName = new HashMap<>();
+	private final String name;
 
 	public static final Person BENJAMIN_GOLLME = getOrCreate("Benjamin Gollme");
 	public static final Person MARCEL_JOPPA = getOrCreate("Marcel Joppa");
@@ -23,5 +32,9 @@ public record Person(String name) {
 
 	public static Person getOrCreate(String name) {
 		return personsByName.computeIfAbsent(name.trim(), Person::new);
+	}
+
+	public static Collection<Person> values() {
+		return Collections.unmodifiableCollection(personsByName.values());
 	}
 }

@@ -112,7 +112,7 @@ public class Downloader {
 			tagContainer.setField(FieldKey.ARTIST, Stream.of(Collections.singletonList(episodeData.host()), episodeData.guests(), Collections.singletonList(episodeData.commentAuthor()))
 					.flatMap(List::stream)
 					.filter(person -> person != null)
-					.map(person -> person.name())
+					.map(person -> person.getName())
 					.collect(Collectors.joining("; ")));
 			tagContainer.setField(FieldKey.GENRE, episodeData.tags().stream().map(tag -> tag.getName()).collect(Collectors.joining("; ")));
 			mp3File.setTag(tagContainer);

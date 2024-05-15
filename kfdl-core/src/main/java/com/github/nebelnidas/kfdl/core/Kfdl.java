@@ -92,9 +92,9 @@ public class Kfdl {
 			scheduleDownload(mergedData);
 		}
 
-		LOGGER.debug("Tags:\n" + Tag.tagsById.toString());
+		LOGGER.debug("Tags:\n" + Tag.values().toString());
 		System.in.read();
-		LOGGER.debug("People:\n" + Person.personsByName.toString());
+		LOGGER.debug("People:\n" + Person.values().toString());
 
 		downloader.addOnFinish(() -> saveFileHandler.forceSave());
 	}
