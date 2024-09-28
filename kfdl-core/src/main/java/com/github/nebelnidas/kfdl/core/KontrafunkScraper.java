@@ -26,6 +26,7 @@ import com.github.nebelnidas.kfdl.core.SpreakerEpisodeExtractor.SpreakerEpisodeD
 public class KontrafunkScraper {
 	// Freitag, 26. April 2024, 5:05 Uhr
 	private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEEE, d. MMMM yyyy, H:mm 'Uhr'", Locale.GERMAN);
+	private static final LocalDate firstDateWithDownloadButton = LocalDate.of(2023, 7, 20);
 	private static final LocalDate firstDateWithDescription = LocalDate.of(2022, 8, 17);
 	private static final LocalDate firstDateWithTags = firstDateWithDescription;
 
@@ -195,9 +196,9 @@ public class KontrafunkScraper {
 
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 			String xPath = switch (attempt) {
-				case 1 -> "//*[@id=\"id-article\"]/div/div/div[1]/div/ul[2]/li/div/p";
-				case 2 -> "//*[@id=\"id-article\"]/div/div/div[1]/div/ul[2]/li/div[1]/div/div";
-				case 3 -> "//*[@id=\"id-article\"]/div/div/div[1]/div/ul[2]/li/div[1]/div";
+				case 1 -> "//*[@id=\"-interview-01\"]/div/div/div[1]/div/div[2]/p";
+				case 2 -> "//*[@id=\"-interview-01\"]/div/div/div[1]/div/div[2]/div/div"; // https://kontrafunk.radio/de/sendung-nachhoeren/politik-und-zeitgeschehen/kontrafunk-aktuell/kontrafunk-aktuell-vom-19-dezember-2022
+				case 3 -> "//*[@id=\"-interview-01\"]/div/div/div[1]/div/div[2]/div"; // https://kontrafunk.radio/de/sendung-nachhoeren/politik-und-zeitgeschehen/kontrafunk-aktuell/kontrafunk-aktuell-vom-21-november-2022
 				default -> throw new IllegalStateException("Unexpected value: " + attempt);
 			};
 
@@ -225,18 +226,95 @@ public class KontrafunkScraper {
 	}
 
 	private static void hydrateDownloadLink(WebsiteEpisodeDataBuilder builder, String url, HtmlPage page) {
-		switch (builder.date.toString()) {
-			case "2022-08-16":
-				return;
+		if (builder.date.isBefore(firstDateWithDownloadButton)) {
+			return;
 		}
 
-		HtmlAnchor downloadLink = page.getFirstByXPath("//*[@id=\"id-article\"]/div/div/div[1]/div/ul[2]/li[1]/div/a[@download]");
+		HtmlAnchor downloadButton = page.getFirstByXPath("//*[@id=\"-interview-01\"]/div/div/div[2]/div[2]/div/a");
 
-		if (downloadLink == null) {
-			throw new IllegalStateException("No download link found on " + url);
+		if (downloadButton == null) {
+			switch (builder.date.toString()) {
+				case "2024-01-22":
+				case "2023-12-25":
+				case "2023-12-21":
+				case "2023-12-14":
+				case "2023-11-03":
+				case "2023-11-02":
+				case "2023-11-01":
+				case "2023-10-27":
+				case "2023-10-26":
+				case "2023-10-25":
+				case "2023-10-23":
+				case "2023-10-20":
+				case "2023-10-19":
+				case "2023-10-18":
+				case "2023-10-17":
+				case "2023-10-13":
+				case "2023-10-12":
+				case "2023-10-11":
+				case "2023-10-10":
+				case "2023-10-09":
+				case "2023-10-05":
+				case "2023-10-04":
+				case "2023-10-03":
+				case "2023-10-02":
+				case "2023-09-29":
+				case "2023-09-28":
+				case "2023-09-27":
+				case "2023-09-22":
+				case "2023-09-21":
+				case "2023-09-20":
+				case "2023-09-19":
+				case "2023-09-18":
+				case "2023-09-15":
+				case "2023-09-14":
+				case "2023-09-13":
+				case "2023-09-12":
+				case "2023-09-11":
+				case "2023-09-08":
+				case "2023-09-07":
+				case "2023-09-06":
+				case "2023-09-05":
+				case "2023-09-04":
+				case "2023-09-01":
+				case "2023-08-31":
+				case "2023-08-30":
+				case "2023-08-29":
+				case "2023-08-25":
+				case "2023-08-24":
+				case "2023-08-23":
+				case "2023-08-22":
+				case "2023-08-21":
+				case "2023-08-18":
+				case "2023-08-17":
+				case "2023-08-16":
+				case "2023-08-15":
+				case "2023-08-11":
+				case "2023-08-09":
+				case "2023-08-07":
+				case "2023-08-04":
+				case "2023-08-03":
+				case "2023-08-02":
+				case "2023-08-01":
+				case "2023-07-31":
+				case "2023-07-28":
+				case "2023-07-26":
+				case "2023-07-21":
+					break; // Hosted by Spreaker
+				default:
+					Kfdl.LOGGER.warn("No download button found on " + url);
+			}
+
+			return;
 		}
 
-		builder.downloadLink(downloadLink.getHrefAttribute());
+		String link = downloadButton.getHrefAttribute();
+
+		if (!link.endsWith(".mp3")) {
+			throw new IllegalStateException("Non-MP3 download link found on " + url);
+		}
+
+		builder.downloadLink(link);
 	}
 
 	private static void hydrateTags(WebsiteEpisodeDataBuilder builder, String url, HtmlPage page) {
@@ -262,7 +340,7 @@ public class KontrafunkScraper {
 				return;
 		}
 
-		List<HtmlAnchor> tagNodes = page.getByXPath("//*[@id=\"id-article\"]/div/div/div[2]/span[2]/a");
+		List<HtmlAnchor> tagNodes = page.getByXPath("//*[@id=\"-interview-01\"]/div/div/div[1]/div/div[3]/span/span/span[2]/a");
 
 		if (tagNodes.isEmpty()) {
 			Kfdl.LOGGER.warn("No tags found on " + url);

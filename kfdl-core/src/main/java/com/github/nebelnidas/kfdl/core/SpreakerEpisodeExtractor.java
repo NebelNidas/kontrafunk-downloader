@@ -109,6 +109,11 @@ public class SpreakerEpisodeExtractor {
 
 				if (event == XMLStreamReader.END_ELEMENT && "item".equals(reader.getLocalName())) {
 					LocalDate publicationDate = LocalDate.parse(pubDate, spreakerDateFormatter);
+
+					if (shouldSkipEpisode(title, publicationDate)) {
+						continue;
+					}
+
 					title = fixTitle(title, publicationDate);
 					LocalDate titleDate = getTitleDate(title, publicationDate);
 
@@ -131,23 +136,80 @@ public class SpreakerEpisodeExtractor {
 			return null;
 		}
 
+		private boolean shouldSkipEpisode(String title, LocalDate date) {
+			switch (title) {
+				case "KONTRAFUNK aktuell: Vereiteltes Attentat auf Trump – Collin McMahon im Gespräch": // not a full episode
+					return true;
+				default:
+					return false;
+			}
+		}
+
 		private String fixTitle(String title, LocalDate date) {
 			switch (title) {
+				case "KONTRAFUNK aktuell vom 27. September 2024 Mittagsausgabe":
+					title = title.replace(" Mittagsausgabe", "");
+					break;
+				case "KONTRAFUNK: Wochenrückblick vom 17. September 2024":
+					assert date.toString().equals("2024-09-07");
+					title = title.replace("17", "07");
+					break;
+				case "KONTRAFUNK: Wochenrückblick vom 21. Juli 2024":
+					assert date.toString().equals("2024-07-20");
+					title = title.replace("21", "20");
+					break;
+				case "KONTRAFUNK: Wochenrückblick vom 6. Juni 2024":
+					assert date.toString().equals("2024-07-06");
+					title = title.replace("Juni", "Juli");
+					break;
+				case "KONTRAFUNK aktuell vom 25.Juni 2024":
+				case "KONTRAFUNK aktuell vom 19.Juni 2024":
+					title = title.replace(".Juni", ". Juni");
+					break;
+				case "KONTRAFUNK: Wochenrückblick vom 14. Juni 2024":
+					assert date.toString().equals("2024-06-15");
+					title = title.replace("14", "15");
+					break;
+				case "KONTRAFUNK aktuell vom 11. Januar 2023":
+					if (date.getYear() == 2024) {
+						title = title.replace("2023", "2024");
+					}
+
+					break;
 				case "KONTRAFUNK aktuell vom 3. Oktober":
-				case "KONTRAFUNK: Der Wochenrückblick vom 30. September":
+				case "KONTRAFUNK: Wochenrückblick vom 30. September":
 				case "KONTRAFUNK aktuell vom 7. September":
+					assert date.getYear() == 2023;
 					title += " 2023";
 					break;
 				case "Wochenrückblick vom 16. Dezember 2023":
 				case "Wochenrückblick vom 19. August 2023":
 					title = "KONTRAFUNK: Der " + title;
 					break;
+				case "KONTRAFUNK: Wochenrückblick vom 29. Juli 2023":
+					if (date.toString().equals("2023-08-05")) {
+						title = title.replace("29. Juli", "5. August");
+					}
+
+					break;
 				case "KONTRAFUNK aktuell vom 3.Juli 2023":
 					title = title.replace("3.Juli", "3. Juli");
 					break;
-				case "KONTRAFUNK aktuell vom 11. Januar 2023":
-					if (date.getYear() == 2024) {
-						title = title.replace("2023", "2024");
+				case "KONTRAFUNK: Wochenrückblick vom 24. Juni 2023":
+					if (date.toString().equals("2023-07-01")) {
+						title = title.replace("24. Juni", "1. Juli");
+					}
+
+					break;
+				case "KONTRAFUNK: Wochenrückblick vom 10. Juni 2023":
+					if (date.toString().equals("2023-06-17")) {
+						title = title.replace("10", "17");
+					}
+
+					break;
+				case "KONTRAFUNK: Der Wochenrückblick vom 18. Mai 2023":
+					if (date.toString().equals("2023-03-18")) {
+						title = title.replace("Mai", "März");
 					}
 
 					break;
@@ -239,18 +301,14 @@ public class SpreakerEpisodeExtractor {
 					|| publicationDate.getMonthValue() != titleDate.getMonthValue()
 					|| publicationDate.getDayOfMonth() != titleDate.getDayOfMonth()) {
 				switch (normalizedTitle) {
-					case "KONTRAFUNK aktuell vom 08. November 2023":
-					case "KONTRAFUNK: Der Wochenrückblick vom 29. Juli 2023":
-					case "KONTRAFUNK: Der Wochenrückblick vom 24. Juni 2023":
-					case "KONTRAFUNK: Der Wochenrückblick vom 10. Juni 2023":
-					case "KONTRAFUNK aktuell vom 28. März 2023":
-					case "KONTRAFUNK: Der Wochenrückblick vom 18. Mai 2023":
-					case "KONTRAFUNK aktuell vom 16. November 2022":
-					case "KONTRAFUNK aktuell vom 28. Oktober 2022":
-					case "KONTRAFUNK aktuell vom 10. Oktober 2022":
-					case "KONTRAFUNK aktuell vom 23. Juni 2022":
-					case "KONTRAFUNK aktuell vom 22. Juni 2022":
-					case "KONTRAFUNK aktuell vom 21. Juni 2022":
+					case "KONTRAFUNK aktuell vom 08. November 2023": // released 2023-11-07
+					case "KONTRAFUNK aktuell vom 28. März 2023":     // released 2023-03-27
+					case "KONTRAFUNK aktuell vom 16. November 2022": // released 2022-11-15
+					case "KONTRAFUNK aktuell vom 28. Oktober 2022":  // released 2022-10-27
+					case "KONTRAFUNK aktuell vom 10. Oktober 2022":  // released 2022-10-12
+					case "KONTRAFUNK aktuell vom 23. Juni 2022":     // released 2022-06-25
+					case "KONTRAFUNK aktuell vom 22. Juni 2022":     // released 2022-06-25
+					case "KONTRAFUNK aktuell vom 21. Juni 2022":     // released 2022-06-25
 						break;
 					default:
 						Kfdl.LOGGER.warn("Publication date and title date do not match for episode '{}': publication date is {}, title date is {}",

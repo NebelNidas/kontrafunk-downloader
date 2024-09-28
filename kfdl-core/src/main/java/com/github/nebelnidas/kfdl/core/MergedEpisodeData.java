@@ -17,7 +17,7 @@ public record MergedEpisodeData(
 		LocalDate date,
 		/** Spreaker's potentially cut version of the podcast. */
 		String spreakerDownload,
-		/** The full (uncut) version if available, otherwise the URL linked by the download button. */
+		/** The full (uncut) version if available, otherwise the Spreaker URL. */
 		String defaultDownload,
 		EpisodeType episodeType,
 		Person host,

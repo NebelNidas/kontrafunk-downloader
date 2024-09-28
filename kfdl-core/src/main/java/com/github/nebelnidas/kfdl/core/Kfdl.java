@@ -9,7 +9,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -19,6 +18,7 @@ import java.util.stream.Collectors;
 
 import javax.xml.stream.XMLStreamException;
 
+import org.apache.commons.lang3.stream.Streams;
 import org.htmlunit.FailingHttpStatusCodeException;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -65,7 +65,7 @@ public class Kfdl {
 				.map(SaveFileEntry::episodeDate)
 				.collect(Collectors.toSet());
 
-		List<SpreakerEpisodeData> entriesToDownload = getSpreakerData().stream()
+		List<SpreakerEpisodeData> entriesToDownload = Streams.of(getSpreakerData())
 				.filter(entry -> entry.episodeType() != EpisodeType.WOCHENRÜCKBLICK)
 				.filter(entry -> !alreadyDownloaded.contains(entry.date()))
 				.collect(Collectors.toList());
@@ -99,17 +99,11 @@ public class Kfdl {
 		downloader.addOnFinish(() -> saveFileHandler.forceSave());
 	}
 
-	private List<SpreakerEpisodeData> getSpreakerData() throws UnsupportedEncodingException, MalformedURLException, XMLStreamException, IOException {
+	private Iterator<SpreakerEpisodeData> getSpreakerData() throws UnsupportedEncodingException, MalformedURLException, XMLStreamException, IOException {
 		InputStream inputStream = new URL(spreakerFeedUrl).openStream();
 		Iterator<SpreakerEpisodeData> iterator = SpreakerEpisodeExtractor.iterateItems(inputStream);
-		List<SpreakerEpisodeData> episodes = new ArrayList<>();
 
-		while (iterator.hasNext()) {
-			SpreakerEpisodeData episode = iterator.next();
-			episodes.add(episode);
-		}
-
-		return episodes;
+		return iterator;
 	}
 
 	@Nullable

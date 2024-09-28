@@ -4,6 +4,7 @@ base {
 
 dependencies {
 	api "org.slf4j:slf4j-api:${slf4j_version}"
+	implementation "org.apache.commons:commons-lang3:${commons_lang3_version}"
 	implementation "org.htmlunit:htmlunit:${htmlunit_version}"
 	implementation "net.jthink:jaudiotagger:${jaudiotagger_version}"
 

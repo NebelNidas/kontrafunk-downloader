@@ -16,6 +16,8 @@ allprojects {
 	}
 
 	spotless {
+		lineEndings = com.diffplug.spotless.LineEnding.UNIX
+
 		java {
 			removeUnusedImports()
 			importOrder("java", "javax", "", "net.minecraft", "com.github.nebelnidas")
