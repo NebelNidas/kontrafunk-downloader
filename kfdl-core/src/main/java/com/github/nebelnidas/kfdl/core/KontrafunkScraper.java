@@ -85,19 +85,18 @@ public class KontrafunkScraper {
 			builder.host(Person.getOrCreate(current.asNormalizedText()));
 			current = elements.remove(0);
 		} else {
-			builder.host(
-					switch (spreakerData.publicationDate().toString()) { // TODO: Inline after https://github.com/checkstyle/checkstyle/pull/14858 is merged
-						case "2024-04-16" -> Person.MARCEL_JOPPA;
-						case "2023-12-27" -> Person.TIM_KRAUSE;
-						case "2023-06-09" -> Person.JASMIN_KOSUBEK;
-						case "2023-06-01" -> Person.JASMIN_KOSUBEK;
-						case "2023-05-26" -> Person.JASMIN_KOSUBEK;
-						case "2022-07-09" -> Person.MICHAEL_GÖRMANN;
-						case "2022-07-07" -> Person.BENJAMIN_GOLLME;
-						case "2022-07-03" -> Person.MICHAEL_GÖRMANN;
-						case "2022-07-02" -> Person.MICHAEL_GÖRMANN;
-						default -> throw new IllegalStateException("Host not found on " + url);
-					});
+			builder.host(switch (spreakerData.publicationDate().toString()) {
+				case "2024-04-16" -> Person.MARCEL_JOPPA;
+				case "2023-12-27" -> Person.TIM_KRAUSE;
+				case "2023-06-09" -> Person.JASMIN_KOSUBEK;
+				case "2023-06-01" -> Person.JASMIN_KOSUBEK;
+				case "2023-05-26" -> Person.JASMIN_KOSUBEK;
+				case "2022-07-09" -> Person.MICHAEL_GÖRMANN;
+				case "2022-07-07" -> Person.BENJAMIN_GOLLME;
+				case "2022-07-03" -> Person.MICHAEL_GÖRMANN;
+				case "2022-07-02" -> Person.MICHAEL_GÖRMANN;
+				default -> throw new IllegalStateException("Host not found on " + url);
+			});
 		}
 
 		List<DomNode> guestNodes = current.getChildNodes();

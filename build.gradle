@@ -1,5 +1,5 @@
 plugins {
-	id "com.github.johnrengelman.shadow" apply false
+	id "com.gradleup.shadow" apply false
 	id "com.diffplug.spotless" apply false
 }
 
@@ -8,7 +8,7 @@ allprojects {
 	apply plugin: "maven-publish"
 	apply plugin: "checkstyle"
 	apply plugin: "com.diffplug.spotless"
-	apply plugin: "com.github.johnrengelman.shadow"
+	apply plugin: "com.gradleup.shadow"
 
 	checkstyle {
 		configFile = rootProject.file("checkstyle.xml")

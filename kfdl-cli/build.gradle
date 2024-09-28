@@ -8,7 +8,7 @@ base {
 
 dependencies {
 	api project(":kfdl-core")
-	api "com.beust:jcommander:${jcommander_version}"
+	api "org.jcommander:jcommander:${jcommander_version}"
 
 	compileOnly "org.projectlombok:lombok:${lombok_version}"
 	annotationProcessor "org.projectlombok:lombok:${lombok_version}"
