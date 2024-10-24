@@ -1,8 +1,6 @@
 package com.github.nebelnidas.kfdl.core;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -10,7 +8,6 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -24,12 +21,12 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.nebelnidas.kfdl.core.KontrafunkScraper.WebsiteEpisodeData;
-import com.github.nebelnidas.kfdl.core.SpreakerEpisodeExtractor.SpreakerEpisodeData;
+import com.github.nebelnidas.kfdl.core.impl.aktuell.scraper.KfAktuellSpreakerScrapeResult;
+import com.github.nebelnidas.kfdl.core.impl.aktuell.scraper.KfAktuellSpreakerScraper;
+import com.github.nebelnidas.kfdl.core.show.Shows;
 
 public class Kfdl {
 	public static final Logger LOGGER = LoggerFactory.getLogger("Kontrafunk Downloader");
-	private static final String spreakerFeedUrl = "https://www.spreaker.com/show/5602119/episodes/feed";
 	private static final String kfAktuellUrlPrefix = "https://kontrafunk.radio/de/sendung-nachhoeren/politik-und-zeitgeschehen/kontrafunk-aktuell/";
 	private static final String kfAktuellDownloadPrefix = "https://kontrafunk.radio/images/audio/sendungen/";
 	private static final DateTimeFormatter kfAktuellUrlDateFormatter = DateTimeFormatter.ofPattern("d-MMMM-yyyy", Locale.GERMAN);
@@ -65,18 +62,19 @@ public class Kfdl {
 				.map(SaveFileEntry::episodeDate)
 				.collect(Collectors.toSet());
 
-		List<SpreakerEpisodeData> entriesToDownload = Streams.of(getSpreakerData())
-				.filter(entry -> entry.episodeType() != EpisodeType.WOCHENRÜCKBLICK)
+		List<KfAktuellSpreakerScrapeResult> entriesToDownload = Streams.of((new KfAktuellSpreakerScraper()).scrape())
+				.filter(entry -> entry.show() == Shows.KONTRAFUNK_AKTUELL)
 				.filter(entry -> !alreadyDownloaded.contains(entry.date()))
+				// .filter(entry -> entry.date().isBefore(LocalDate.of(2024, 5, 16)))
 				.collect(Collectors.toList());
 
-		for (SpreakerEpisodeData spreakerEntry : entriesToDownload) {
+		for (KfAktuellSpreakerScrapeResult spreakerEntry : entriesToDownload) {
 			if (!alreadyIndexed.contains(spreakerEntry.date())) {
 				LOGGER.info("Found new episode: {}", spreakerEntry.title());
 			}
 		}
 
-		for (SpreakerEpisodeData spreakerEntry : entriesToDownload) {
+		for (KfAktuellSpreakerScrapeResult spreakerEntry : entriesToDownload) {
 			WebsiteEpisodeData scrapedData = scrapeEpisodeData(spreakerEntry);
 
 			if (scrapedData == null) {
@@ -99,15 +97,8 @@ public class Kfdl {
 		downloader.addOnFinish(() -> saveFileHandler.forceSave());
 	}
 
-	private Iterator<SpreakerEpisodeData> getSpreakerData() throws UnsupportedEncodingException, MalformedURLException, XMLStreamException, IOException {
-		InputStream inputStream = new URL(spreakerFeedUrl).openStream();
-		Iterator<SpreakerEpisodeData> iterator = SpreakerEpisodeExtractor.iterateItems(inputStream);
-
-		return iterator;
-	}
-
 	@Nullable
-	private WebsiteEpisodeData scrapeEpisodeData(SpreakerEpisodeData spreakerData) throws IOException {
+	private WebsiteEpisodeData scrapeEpisodeData(KfAktuellSpreakerScrapeResult spreakerData) throws IOException {
 		LOGGER.debug("Scraping info for {}", spreakerData.title());
 		int maxAttempts = 4;
 
@@ -187,7 +178,7 @@ public class Kfdl {
 
 			episodeData = episodeData.withDefaultDownload(url);
 
-			downloader.queue(episodeData);
+			// downloader.queue(episodeData);
 		} catch (Exception e) {
 			LOGGER.error("Failed to download episode", e);
 		}

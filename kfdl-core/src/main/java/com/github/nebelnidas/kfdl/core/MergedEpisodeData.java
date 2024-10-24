@@ -6,8 +6,8 @@ import java.util.Objects;
 
 import lombok.With;
 
-import com.github.nebelnidas.kfdl.core.KontrafunkScraper.WebsiteEpisodeData;
-import com.github.nebelnidas.kfdl.core.SpreakerEpisodeExtractor.SpreakerEpisodeData;
+import com.github.nebelnidas.kfdl.core.impl.aktuell.scraper.KfAktuellSpreakerScrapeResult;
+import com.github.nebelnidas.kfdl.core.scraper.impl.KontrafunkScraper.WebsiteEpisodeData;
 
 @With
 public record MergedEpisodeData(
@@ -24,8 +24,8 @@ public record MergedEpisodeData(
 		List<Person> guests,
 		Person commentAuthor,
 		List<Tag> tags) {
-	public MergedEpisodeData(SpreakerEpisodeData spreakerEntry, WebsiteEpisodeData scrapedData) {
-		this(scrapedData.url(),
+	public MergedEpisodeData(KfAktuellSpreakerScrapeResult spreakerEntry, WebsiteEpisodeData scrapedData) {
+		this(scrapedData.webUrl(),
 				Objects.requireNonNull(spreakerEntry.title()),
 				scrapedData.description() != null ? scrapedData.description() : spreakerEntry.description(),
 				Objects.requireNonNull(spreakerEntry.publicationDate()),

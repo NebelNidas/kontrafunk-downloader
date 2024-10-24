@@ -1,43 +1,56 @@
-package com.github.nebelnidas.kfdl.core;
+package com.github.nebelnidas.kfdl.core.impl.aktuell.scraper;
 
+import java.net.URL;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-public class SpreakerEpisodeExtractor {
+import com.github.nebelnidas.kfdl.core.Kfdl;
+import com.github.nebelnidas.kfdl.core.scraper.LinearScraper;
+import com.github.nebelnidas.kfdl.core.show.Show;
+import com.github.nebelnidas.kfdl.core.show.Shows;
+
+import lombok.SneakyThrows;
+
+public class KfAktuellSpreakerScraper implements LinearScraper {
+	private static final String spreakerFeedUrl = "https://www.spreaker.com/show/5602119/episodes/feed";
 	private static final DateTimeFormatter spreakerDateFormatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
 	private static final DateTimeFormatter titleDateFormatter = DateTimeFormatter.ofPattern("dd. MMMM yyyy", Locale.GERMAN);
 
-	private SpreakerEpisodeExtractor() {
+	@Override
+	public String getLocalId() {
+		return "spreaker";
 	}
 
-	/**
-	 * Parses the item tags from an XML feed.
-	 *
-	 * @param inputStream The input stream of the XML feed.
-	 * @return A list of {@link SpreakerEpisodeData} objects.
-	 * @throws UnsupportedEncodingException
-	 */
-	public static Iterator<SpreakerEpisodeData> iterateItems(InputStream inputStream) throws XMLStreamException, UnsupportedEncodingException {
+	@Override
+	public Collection<Show> getScrapeableShows() {
+		return Set.of(Shows.KONTRAFUNK_AKTUELL, Shows.WOCHENRÜCKBLICK);
+	}
+
+	@SneakyThrows
+	@Override
+	public Iterator<KfAktuellSpreakerScrapeResult> scrape() {
 		XMLInputFactory factory = XMLInputFactory.newInstance();
+		InputStream inputStream = new URL(spreakerFeedUrl).openStream();
 		XMLStreamReader reader = factory.createXMLStreamReader(new InputStreamReader(inputStream, "UTF-8"));
 
 		return new SpreakerIterator(reader);
 	}
 
-	private static class SpreakerIterator implements Iterator<SpreakerEpisodeData> {
+	private class SpreakerIterator implements Iterator<KfAktuellSpreakerScrapeResult> {
 		private final XMLStreamReader reader;
-		private SpreakerEpisodeData next;
+		private KfAktuellSpreakerScrapeResult next;
 
 		SpreakerIterator(XMLStreamReader reader) {
 			this.reader = reader;
@@ -57,13 +70,13 @@ public class SpreakerEpisodeExtractor {
 		}
 
 		@Override
-		public SpreakerEpisodeData next() {
+		public KfAktuellSpreakerScrapeResult next() {
 			try {
 				if (next == null) {
 					next = readNext();
 				}
 
-				SpreakerEpisodeData ret = next;
+				KfAktuellSpreakerScrapeResult ret = next;
 				next = null;
 
 				return ret;
@@ -72,7 +85,7 @@ public class SpreakerEpisodeExtractor {
 			}
 		}
 
-		private SpreakerEpisodeData readNext() throws XMLStreamException {
+		private KfAktuellSpreakerScrapeResult readNext() throws XMLStreamException {
 			String title = null;
 			String description = null;
 			String episodeApiLink = null;
@@ -117,7 +130,8 @@ public class SpreakerEpisodeExtractor {
 					title = fixTitle(title, publicationDate);
 					LocalDate titleDate = getTitleDate(title, publicationDate);
 
-					return new SpreakerEpisodeData(
+					return new KfAktuellSpreakerScrapeResult(
+							KfAktuellSpreakerScraper.this,
 							Objects.requireNonNull(title),
 							description,
 							Objects.requireNonNull(episodeApiLink),
@@ -125,11 +139,11 @@ public class SpreakerEpisodeExtractor {
 							Objects.requireNonNull(titleDate),
 							Objects.requireNonNull(fileUrl),
 							Objects.requireNonNull(fileMimeType),
-							requireNotNegative(fileBytes),
-							requireNotNegative(durationInSeconds),
+							requireNonNegative(fileBytes),
+							requireNonNegative(durationInSeconds),
 							title.contains("Wochenrückblick") || titleDate.toString().equals("2022-07-23")
-									? EpisodeType.WOCHENRÜCKBLICK
-									: EpisodeType.AKTUELL);
+									? Shows.WOCHENRÜCKBLICK
+									: Shows.KONTRAFUNK_AKTUELL);
 				}
 			}
 
@@ -320,23 +334,11 @@ public class SpreakerEpisodeExtractor {
 		}
 	}
 
-	private static int requireNotNegative(int value) {
+	private static int requireNonNegative(int value) {
 		if (value < 0) {
 			throw new IllegalArgumentException("Value must not be negative: " + value);
 		}
 
 		return value;
 	}
-
-	public record SpreakerEpisodeData(
-			String title,
-			String description,
-			String episodeApiLink,
-			LocalDate publicationDate,
-			LocalDate date,
-			String fileUrl,
-			String fileMimeType,
-			int fileBytes,
-			int durationInSeconds,
-			EpisodeType episodeType) { }
 }

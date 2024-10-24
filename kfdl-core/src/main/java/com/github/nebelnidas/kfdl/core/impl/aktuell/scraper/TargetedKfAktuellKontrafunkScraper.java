@@ -1,17 +1,17 @@
-package com.github.nebelnidas.kfdl.core;
+package com.github.nebelnidas.kfdl.core.impl.aktuell.scraper;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 import lombok.Builder;
 import lombok.NonNull;
-import org.htmlunit.FailingHttpStatusCodeException;
+import lombok.SneakyThrows;
+
 import org.htmlunit.WebClient;
 import org.htmlunit.html.DomElement;
 import org.htmlunit.html.DomNode;
@@ -20,37 +20,79 @@ import org.htmlunit.html.HtmlAnchor;
 import org.htmlunit.html.HtmlElement;
 import org.htmlunit.html.HtmlPage;
 
-import com.github.nebelnidas.kfdl.core.KontrafunkScraper.WebsiteEpisodeData.WebsiteEpisodeDataBuilder;
-import com.github.nebelnidas.kfdl.core.SpreakerEpisodeExtractor.SpreakerEpisodeData;
+import com.github.nebelnidas.kfdl.core.Kfdl;
+import com.github.nebelnidas.kfdl.core.Person;
+import com.github.nebelnidas.kfdl.core.Tag;
+import com.github.nebelnidas.kfdl.core.impl.aktuell.scraper.TargetedKfAktuellKontrafunkScraper.WebsiteEpisodeData.WebsiteEpisodeDataBuilder;
+import com.github.nebelnidas.kfdl.core.scraper.Scraper;
+import com.github.nebelnidas.kfdl.core.scraper.TargetedScraper;
+import com.github.nebelnidas.kfdl.core.show.Show;
+import com.github.nebelnidas.kfdl.core.show.Shows;
 
-public class KontrafunkScraper {
-	// Freitag, 26. April 2024, 5:05 Uhr
-	private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEEE, d. MMMM yyyy, H:mm 'Uhr'", Locale.GERMAN);
+public class TargetedKfAktuellKontrafunkScraper implements TargetedScraper<KfAktuellScrapeTarget> {
+	private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEEE, d. MMMM yyyy, H:mm 'Uhr'", Locale.GERMAN); // Freitag, 26. April 2024, 5:05 Uhr
 	private static final LocalDate firstDateWithDownloadButton = LocalDate.of(2023, 7, 20);
 	private static final LocalDate firstDateWithDescription = LocalDate.of(2022, 8, 17);
 	private static final LocalDate firstDateWithTags = firstDateWithDescription;
+	private WebsiteEpisodeDataBuilder builder;
+	private String url;
+	private HtmlPage page;
 
-	public static WebsiteEpisodeData getEpisodeInfo(String episodeUrl, SpreakerEpisodeData spreakerData) throws FailingHttpStatusCodeException, MalformedURLException, IOException {
+	@Override
+	public String getLocalId() {
+		return "kontrafunk-website";
+	}
+
+	@Override
+	public Collection<Show> getScrapeableShows() {
+		return List.of(Shows.KONTRAFUNK_AKTUELL);
+	}
+
+	@Override
+	@SneakyThrows
+	public KfAktuellKontrafunkScrapeResult scrape(KfAktuellScrapeTarget target) {
 		try (WebClient webClient = new WebClient()) {
 			webClient.getOptions().setCssEnabled(false);
 			webClient.getOptions().setJavaScriptEnabled(false);
 			webClient.getOptions().setPrintContentOnFailingStatusCode(false);
 
-			WebsiteEpisodeDataBuilder builder = WebsiteEpisodeData.builder();
-			HtmlPage page = webClient.getPage(episodeUrl);
+			builder = WebsiteEpisodeData.builder();
+			url = target.url();
+			page = webClient.getPage(url);
 
-			builder.url(episodeUrl);
-			hydrateDate(builder, episodeUrl, page);
-			hydratePeople(builder, episodeUrl, page, spreakerData);
-			hydrateDescription(builder, episodeUrl, page);
-			hydrateDownloadLink(builder, episodeUrl, page);
-			hydrateTags(builder, episodeUrl, page);
+			builder.origin(this);
+			builder.url(url);
+			hydrateNextEpisodeUrl();
+			hydrateDate();
+			hydrateTitle();
+			hydratePeople();
+			hydrateDescription();
+			hydrateDownloadLink();
+			hydrateTags();
 
 			return builder.build();
 		}
 	}
 
-	private static void hydrateDate(WebsiteEpisodeDataBuilder builder, String url, HtmlPage page) {
+	private void hydrateNextEpisodeUrl() {
+		HtmlAnchor nextEpisodeLink = page.getFirstByXPath("//*[@id=\"template-wI5pQLap#1\"]/div/div[2]/a");
+
+		if (nextEpisodeLink != null) {
+			builder.nextEpisodeUrl(nextEpisodeLink.getHrefAttribute());
+		}
+	}
+
+	private void hydrateTitle() {
+		HtmlElement title = page.getFirstByXPath("//*[@id=\"template-wI5pQLap#2\"]/div/div/h1");
+
+		if (title == null) {
+			throw new IllegalStateException("No title found on " + url);
+		}
+
+		builder.title(title.asNormalizedText());
+	}
+
+	private void hydrateDate() {
 		HtmlElement date = page.getFirstByXPath("//*[@id=\"template-wI5pQLap#2\"]/div/div/div[1]");
 
 		if (date == null) {
@@ -60,7 +102,7 @@ public class KontrafunkScraper {
 		builder.date(LocalDate.parse(date.asNormalizedText(), dateFormatter));
 	}
 
-	private static void hydratePeople(WebsiteEpisodeDataBuilder builder, String url, HtmlPage page, SpreakerEpisodeData spreakerData) {
+	private void hydratePeople() {
 		List<HtmlElement> elements = page.getByXPath("//*[@id=\"template-wI5pQLap#2\"]/div/div/div[last()]/div/span");
 
 		if (elements.size() < 2 || elements.size() > 4) {
@@ -85,7 +127,7 @@ public class KontrafunkScraper {
 			builder.host(Person.getOrCreate(current.asNormalizedText()));
 			current = elements.remove(0);
 		} else {
-			builder.host(switch (spreakerData.publicationDate().toString()) {
+			builder.host(switch (builder.date.toString()) {
 				case "2024-04-16" -> Person.MARCEL_JOPPA;
 				case "2023-12-27" -> Person.TIM_KRAUSE;
 				case "2023-06-09" -> Person.JASMIN_KOSUBEK;
@@ -186,7 +228,7 @@ public class KontrafunkScraper {
 		// }
 	}
 
-	private static void hydrateDescription(WebsiteEpisodeDataBuilder builder, String url, HtmlPage page) {
+	private void hydrateDescription() {
 		if (builder.date.isBefore(firstDateWithDescription)) {
 			return;
 		}
@@ -224,7 +266,7 @@ public class KontrafunkScraper {
 		throw new IllegalStateException("No description found on " + url);
 	}
 
-	private static void hydrateDownloadLink(WebsiteEpisodeDataBuilder builder, String url, HtmlPage page) {
+	private void hydrateDownloadLink() {
 		if (builder.date.isBefore(firstDateWithDownloadButton)) {
 			return;
 		}
@@ -316,7 +358,7 @@ public class KontrafunkScraper {
 		builder.downloadLink(link);
 	}
 
-	private static void hydrateTags(WebsiteEpisodeDataBuilder builder, String url, HtmlPage page) {
+	private void hydrateTags() {
 		builder.tags(Collections.emptyList());
 
 		if (builder.date.isBefore(firstDateWithTags)) {
@@ -357,13 +399,16 @@ public class KontrafunkScraper {
 
 	@Builder
 	public record WebsiteEpisodeData(
-			String url,
+			@NonNull Scraper origin,
+			@NonNull String url,
 			@NonNull LocalDate date,
+			@NonNull String title,
 			@NonNull Person host,
 			@NonNull List<Person> guests,
 			Person beitragAuthor,
 			Person commentAuthor,
 			String description,
 			String downloadLink,
-			@NonNull List<Tag> tags) { }
+			@NonNull List<Tag> tags,
+			String nextEpisodeUrl) implements KfAktuellKontrafunkScrapeResult { }
 }
